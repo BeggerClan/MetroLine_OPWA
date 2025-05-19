@@ -43,7 +43,8 @@ public class SecurityConfiguration {
                                 "/api/suspensions/**",
                                 "/api/metro-lines/*/full-details",
                                 "/api/metro-lines/full-details",
-                                "/api/stations/**"
+                                "/api/stations/**",
+                                "/api/pawa/**"
                         ).permitAll()
                         .requestMatchers(
                                 "/api/v1/user/getAll",
