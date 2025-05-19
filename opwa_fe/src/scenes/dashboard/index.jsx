@@ -23,6 +23,10 @@ const Dashboard = () => {
   const [totalTickets, setTotalTickets] = useState(0);
   const [loading, setLoading] = useState(true);
 
+  // Thêm state cho số vé và doanh thu trong ngày
+  const [todayTickets, setTodayTickets] = useState(0);
+  const [todayRevenue, setTodayRevenue] = useState(0);
+
   useEffect(() => {
     fetchBookingRecords()
       .then((data) => {
@@ -81,6 +85,23 @@ const Dashboard = () => {
         setTicketStats(stats);
         setTotalTickets(total);
         setTotalRevenue(totalMoney);
+
+        // --------- Thống kê trong ngày ----------
+        const today = new Date();
+        const todayStr = today.toISOString().slice(0, 10); // yyyy-mm-dd
+
+        let todayCount = 0;
+        let todayMoney = 0;
+        data.forEach((item) => {
+          // Dùng activationTime thay vì createdAt
+          const activated = item.activationTime?.slice(0, 10);
+          if (activated === todayStr && TICKET_TYPE_INFO[item.ticketTypeCode]) {
+            todayCount += 1;
+            todayMoney += TICKET_TYPE_INFO[item.ticketTypeCode].price;
+          }
+        });
+        setTodayTickets(todayCount);
+        setTodayRevenue(todayMoney);
       })
       .catch((err) => alert(err.message))
       .finally(() => setLoading(false));
@@ -94,6 +115,52 @@ const Dashboard = () => {
   return (
     <div style={{ padding: "2rem" }}>
       <h2 style={{ fontSize: "1.5rem", marginBottom: "2rem" }}>Dashboard</h2>
+
+      {/* Hiển thị số liệu trong ngày */}
+      <div
+        style={{
+          display: "flex",
+          gap: "2rem",
+          marginBottom: "2rem",
+          flexWrap: "wrap",
+        }}
+      >
+        <div
+          style={{
+            background: "#fff",
+            borderRadius: 12,
+            boxShadow: "0 2px 8px #0001",
+            padding: 24,
+            minWidth: 220,
+            flex: "1 1 220px",
+          }}
+        >
+          <h3 style={{ fontSize: "1.1rem", marginBottom: 8, color: "#1976d2" }}>
+            Tickets Sold Today
+          </h3>
+          <div style={{ fontSize: 28, fontWeight: 700, color: "#1976d2" }}>
+            {todayTickets}
+          </div>
+        </div>
+        <div
+          style={{
+            background: "#fff",
+            borderRadius: 12,
+            boxShadow: "0 2px 8px #0001",
+            padding: 24,
+            minWidth: 220,
+            flex: "1 1 220px",
+          }}
+        >
+          <h3 style={{ fontSize: "1.1rem", marginBottom: 8, color: "#388e3c" }}>
+            Revenue Today (VND)
+          </h3>
+          <div style={{ fontSize: 28, fontWeight: 700, color: "#388e3c" }}>
+            {todayRevenue.toLocaleString()}
+          </div>
+        </div>
+      </div>
+
       <div style={{ display: "flex", gap: "2rem", flexWrap: "wrap" }}>
         <div
           style={{
