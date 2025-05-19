@@ -22,6 +22,8 @@ import DirectionsTransitOutlinedIcon from "@mui/icons-material/DirectionsTransit
 import BarChartOutlinedIcon from "@mui/icons-material/BarChartOutlined";
 import LocationOnOutlinedIcon from "@mui/icons-material/LocationOnOutlined"; // Add this import at the top
 import LogoutOutlinedIcon from "@mui/icons-material/LogoutOutlined"; // thêm dòng này
+import AttachMoneyOutlinedIcon from "@mui/icons-material/AttachMoneyOutlined"; // Import icon tiền
+
 const Item = ({ title, to, icon, selected, setSelected }) => {
   const theme = useTheme();
   const colors = tokens(theme.palette.mode);
@@ -139,6 +141,13 @@ const Sidebar = ({ isCollapsed, onToggleCollapse, selected, setSelected }) => {
                 title="Booking Records"
                 to="/dashboard/booking-records"
                 icon={<ReceiptOutlinedIcon />} // hoặc icon khác bạn thích
+                selected={selected}
+                setSelected={setSelected}
+              />
+              <Item
+                title="Add Funds to Account"
+                to="/dashboard/add-funds"
+                icon={<AttachMoneyOutlinedIcon />} // hoặc icon khác bạn thích
                 selected={selected}
                 setSelected={setSelected}
               />

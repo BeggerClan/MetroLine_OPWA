@@ -16,8 +16,8 @@ import Autocomplete from "@mui/material/Autocomplete";
 import {
   fetchTicketPolicies,
   fetchPassengerIds,
-  purchaseTicket,
-  createTicket,
+  purchaseTicket
+
 } from "./ticketAPI";
 
 const paymentMethods = [
@@ -88,28 +88,22 @@ const TicketPurchase = () => {
     e.preventDefault();
     setLoading(true);
     try {
-      const selectedTicket = ticketTypes.find(
-        (t) => t.value === form.ticketType
-      );
-
-      // 1. Tạo vé trước
-      const ticketCreateData = {
-        ticketPolicyId: selectedTicket.id, // id của policy
-        // các trường khác nếu cần, ví dụ:
-        nationalId: form.idType === "national" ? form.nationalId : undefined,
-        passengerId: form.idType === "passenger" ? form.passengerId : undefined,
-      };
-      const ticket = await createTicket(ticketCreateData, token);
-
-      // 2. Thanh toán vé vừa tạo
+      // Chuẩn bị dữ liệu gửi đi đúng yêu cầu BE
       const paymentData = {
-        ticketId: ticket.id || ticket._id, // id của vé vừa tạo
-        paymentMethod: form.paymentMethod,
-        amount: ticketPrice,
+        ticketTypeId: form.ticketType, // mã loại vé
+        paymentMethod: form.paymentMethod === "ewallet" ? "WALLET" : "CASH",
       };
-      if (form.paymentMethod === "cash") {
-        paymentData.cashReceived = form.cashReceived;
+
+      if (form.idType === "passenger") {
+        paymentData.passengerId = form.passengerId;
       }
+      if (form.idType === "national") {
+        paymentData.nationalId = form.nationalId;
+      }
+      if (form.paymentMethod === "cash") {
+        paymentData.cashReceived = Number(form.cashReceived);
+      }
+
       await purchaseTicket(paymentData, token);
 
       alert("Ticket purchased successfully!");
@@ -122,7 +116,7 @@ const TicketPurchase = () => {
         cashReceived: "",
       });
     } catch (err) {
-      alert("Mua vé thất bại: " + err.message);
+      alert("Ticket purchase failed: " + err.message);
     } finally {
       setLoading(false);
     }

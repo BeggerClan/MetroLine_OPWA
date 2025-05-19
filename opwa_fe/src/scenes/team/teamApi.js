@@ -10,22 +10,27 @@ export async function fetchTeam() {
   });
 
   if (!response.ok) {
-    const error = await response.text();
-    throw new Error(error || "Failed to fetch team data");
+    const errorText = await response.text();
+    const error = new Error(errorText || "Failed to fetch team data");
+    error.status = response.status; // Gán status code vào error
+    throw error;
   }
 
   return response.json();
 }
 export async function updateUser(id, userData) {
   const token = localStorage.getItem("token");
-  const response = await fetch(`http://localhost:8081/api/v1/user/update/${id}`, {
-    method: "PUT",
-    headers: {
-      "Content-Type": "application/json",
-      Authorization: `Bearer ${token}`,
-    },
-    body: JSON.stringify(userData),
-  });
+  const response = await fetch(
+    `http://localhost:8081/api/v1/user/update/${id}`,
+    {
+      method: "PUT",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${token}`,
+      },
+      body: JSON.stringify(userData),
+    }
+  );
   if (!response.ok) {
     const error = await response.text();
     throw new Error(error || "Failed to update user");
@@ -35,14 +40,17 @@ export async function updateUser(id, userData) {
 
 export async function deleteUserById(id) {
   const token = localStorage.getItem("token");
-  const response = await fetch(`http://localhost:8081/api/v1/user/delete/${id}`, {
-    method: "DELETE",
-    headers: {
-      "Content-Type": "application/json",
-      Authorization: `Bearer ${token}`,
-    },
-    credentials: "include",
-  });
+  const response = await fetch(
+    `http://localhost:8081/api/v1/user/delete/${id}`,
+    {
+      method: "DELETE",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${token}`,
+      },
+      credentials: "include",
+    }
+  );
   if (!response.ok) {
     const error = await response.text();
     throw new Error(error || "Failed to delete user");
@@ -99,4 +107,3 @@ export async function addUserPermitAll(payload) {
   if (!response.ok) throw new Error(data.message || "Failed to register user");
   return data;
 }
-

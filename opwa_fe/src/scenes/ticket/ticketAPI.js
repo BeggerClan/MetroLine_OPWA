@@ -32,15 +32,21 @@ export async function fetchPassengerIds(token) {
 
 // Mua vé
 export async function purchaseTicket(data, token) {
-  const response = await fetch("http://localhost:8080/api/opwa/agent/payments", {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      Authorization: `Bearer ${token}`,
-    },
-    body: JSON.stringify(data),
-  });
-  if (!response.ok) throw new Error("Failed to purchase ticket");
+  const response = await fetch(
+    "http://localhost:8080/api/opwa/agent/payments",
+    {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${token}`,
+      },
+      body: JSON.stringify(data),
+    }
+  );
+  if (!response.ok) {
+    const error = await response.text();
+    throw new Error(error || "Failed to purchase ticket");
+  }
   return response.json();
 }
 
@@ -55,4 +61,16 @@ export async function createTicket(data, token) {
   });
   if (!response.ok) throw new Error("Failed to create ticket");
   return response.json(); // trả về ticket object, trong đó có _id hoặc id
+}
+export async function addFunds(data, token) {
+  const response = await fetch("http://localhost:8080/api/opwa/agent/topup", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      Authorization: `Bearer ${token}`,
+    },
+    body: JSON.stringify(data),
+  });
+  if (!response.ok) throw new Error("Failed to add funds");
+  return response.json();
 }

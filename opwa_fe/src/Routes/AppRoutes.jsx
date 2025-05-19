@@ -17,6 +17,8 @@ import Geography from "../scenes/geography";
 import ViewStaff from "../scenes/team/viewStaff";
 import BookingRecords from "../scenes/bar/BookingRecords";
 import CreateNewStaff from "../scenes/team/createNewStaff";
+import AddFund from "../scenes/ticket/addFund";
+import ErrorPage from "../scenes/error";
 
 
 import Station from "../metroSystem/station"; // <-- add this import
@@ -75,9 +77,10 @@ export default function AppRoutes() {
               <Route path="team/addStaff" element={<AddStaff />} />
               <Route path="team/updateStaff/:id" element={<UpdateStaff />} />
               <Route path="ticket" element={<TicketPurchase />} />
+              <Route path="add-funds"element={<AddFund />} />
               <Route path="bar" element={<Bar />} />
               <Route path="pie" element={<Pie />} />
-           
+              <Route path = "error" element={<ErrorPage />} />
               <Route path="geography" element={<Geography />} />
               <Route path="metroline" element={<Metroline />} />
               <Route path="station" element={<Station />} /> {/* <-- add this */}

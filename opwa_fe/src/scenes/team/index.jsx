@@ -29,9 +29,26 @@ const Team = () => {
   useEffect(() => {
     fetchTeam()
       .then((data) => setTeam(data))
-      .catch((err) => alert(err.message))
+      .catch((err) => {
+        console.log("ERROR:", err);
+        if (
+          err.status === 401 ||
+          err.message?.includes("401") ||
+          err.message?.toLowerCase().includes("unauth")
+        ) {
+          navigate("/dashboard/error", { state: { code: 401 } });
+        } else if (
+          err.status === 403 ||
+          err.message?.includes("403") ||
+          err.message?.toLowerCase().includes("forbidden")
+        ) {
+          navigate("/dashboard/error", { state: { code: 403 } });
+        } else {
+          alert(err.message);
+        }
+      })
       .finally(() => setLoading(false));
-  }, []);
+  }, [navigate]);
 
   const handleDelete = async (id) => {
     const confirm = window.confirm(
@@ -46,7 +63,19 @@ const Team = () => {
       );
       alert("User deleted successfully!");
     } catch (err) {
-      alert(err.message || "Failed to delete user");
+      if (
+        err.message?.includes("401") ||
+        err.message?.toLowerCase().includes("unauth")
+      ) {
+        navigate("/error", { state: { code: 401 } });
+      } else if (
+        err.message?.includes("403") ||
+        err.message?.toLowerCase().includes("forbidden")
+      ) {
+        navigate("/error", { state: { code: 403 } });
+      } else {
+        alert(err.message || "Failed to delete user");
+      }
     }
   };
 
@@ -134,7 +163,9 @@ const Team = () => {
           </IconButton>
           <IconButton
             color="info"
-            onClick={() => navigate(`/dashboard/team/updateStaff/${params.row.id}`)}
+            onClick={() =>
+              navigate(`/dashboard/team/updateStaff/${params.row.id}`)
+            }
             title="Edit"
           >
             <EditIcon />
