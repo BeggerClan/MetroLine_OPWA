@@ -148,6 +148,9 @@ const MetroLineMapView = ({ selectedLineId, refresh, focusPosition, visibleLineI
     ? [firstStation.latitude, firstStation.longitude]
     : [10.7769, 106.7009];
 
+  // Adjust zoom: zoom in if only one line is displayed, else show city
+  const zoom = displayedLines.length === 1 ? 13 : 11;
+
   // Define max bounds (example: Ho Chi Minh City area)
   const maxBounds = [
     [10.5, 106.3], // Southwest corner
@@ -158,9 +161,9 @@ const MetroLineMapView = ({ selectedLineId, refresh, focusPosition, visibleLineI
     <MapContainer
       key={selectedLineId || "all"}
       center={center}
-      zoom={13}
-      minZoom={12}
-      maxZoom={17}
+      zoom={zoom}
+      minZoom={10}
+      maxZoom={16}
       style={{ height: "70vh", width: "100%" }}
       maxBounds={maxBounds}
       maxBoundsViscosity={1.0}

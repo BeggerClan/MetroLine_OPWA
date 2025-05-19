@@ -129,7 +129,7 @@ public class MetroLineController {
 
         LocalTime lastDep = (lastDeparture != null)
                 ? LocalTime.parse(lastDeparture)
-                : LocalTime.of(6, 0); // default
+                : LocalTime.of(22, 0); // default to 10pm
 
         List<Trip> trips = metroLineService.generateTripsForLine(metroLine, lastDep);
         return ResponseEntity.ok(trips);
@@ -216,6 +216,15 @@ public class MetroLineController {
     public ResponseEntity<List<MetroLineFullDetailsDTO>> getAllFullDetails() {
         List<MetroLineFullDetailsDTO> dtos = metroLineService.getAllFullDetails();
         return ResponseEntity.ok(dtos);
+    }
+
+    // Insert station at specific position in line (POST)
+    @PostMapping("/{lineId}/stations/{stationId}/insert")
+    public ResponseEntity<MetroLine> insertStationAtPosition(
+            @PathVariable String lineId,
+            @PathVariable String stationId,
+            @RequestParam int position) {
+        return ResponseEntity.ok(metroLineService.insertStationAtPosition(lineId, stationId, position));
     }
 
     // Utility method for role check (take token the same way as UserController)

@@ -29,9 +29,9 @@ const AddStationDialog = ({ open, onClose, lineId, existingStations, onStationAd
   };
 
   return (
-    <Dialog open={open} onClose={onClose}>
+    <Dialog open={open} onClose={onClose} maxWidth="xs" fullWidth>
       <DialogTitle>Add Station</DialogTitle>
-      <DialogContent>
+      <DialogContent sx={{ minWidth: 350, maxWidth: 400, width: 400 }}>
         <FormControl fullWidth margin="dense">
           <InputLabel id="select-station-label">Select Station</InputLabel>
           <Select

@@ -20,6 +20,9 @@ public class StationService {
     @Autowired
     private MetroLineRepo metroLineRepo;
 
+    @Autowired
+    private MetroLineService metroLineService;
+
     public Station updateStation(String id, Station updatedStation) {
         Station existing = stationRepo.findById(id)
                 .orElseThrow(() -> new RuntimeException("Station not found with id: " + id));
@@ -57,8 +60,9 @@ public class StationService {
 
         // Remove station from all metro lines
         affectedLines.forEach(line -> {
-            line.getStationIds().remove(id);
-            metroLineRepo.save(line);
+            List<String> stationIds = line.getStationIds() == null ? new java.util.ArrayList<>() : new java.util.ArrayList<>(line.getStationIds());
+            stationIds.remove(id);
+            metroLineService.updateStationsAndRegenerateTrips(line, stationIds, "Station deleted: " + id);
         });
 
         // Now delete the station

@@ -24,6 +24,7 @@ import ErrorPage from "../scenes/error";
 import Station from "../metroSystem/station"; // <-- add this import
 import Metroline from "../metroSystem/metroline";
 import ProtectedRoute from "./ProtectedRoute";
+import StationTripsGridPageWrapper from "../metroSystem/metroline/components/tripPage/StationTripsGridPageWrapper";
 
 
 const SIDEBAR_WIDTH = 250;
@@ -86,6 +87,7 @@ export default function AppRoutes() {
               <Route path="station" element={<Station />} /> {/* <-- add this */}
               <Route path="team/view/:id" element={<ViewStaff />} />
               <Route path="booking-records" element={<BookingRecords />} />
+              <Route path="metroline/:lineId/station/:stationId/trips" element={<StationTripsGridPageWrapper />} />
                {/* <-- add this */}
               {/* <Route path="contacts" element={<Contacts />} /> */}
             </Routes>

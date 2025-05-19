@@ -12,17 +12,22 @@ import com.opwa.opwa_be.model.Trip;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.mongodb.core.MongoTemplate;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
 import java.time.LocalTime;
 import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.List;
 import java.util.Optional;
 import java.util.stream.Collectors;
 
 @Service
 public class MetroLineService {
+    
+    private static final Logger log = LoggerFactory.getLogger(MetroLineService.class);
     
     @Autowired
     private MetroLineRepo metroLineRepo;
@@ -128,31 +133,34 @@ public class MetroLineService {
         return metroLineRepo.save(line);
     }
 
+    public void updateStationsAndRegenerateTrips(MetroLine line, List<String> newStationIds, String reason) {
+        // Sort numerically by station number
+        newStationIds.sort(Comparator.comparingInt(id -> Integer.parseInt(id.replaceFirst("^ST", ""))));
+        line.setStationIds(newStationIds);
+        line.setTotalDuration(calculateTotalDuration(line));
+        line.setUpdatedAt(LocalDateTime.now());
+        metroLineRepo.save(line);
+        log.info("Regenerating trips for ALL MetroLines due to: {} (triggered by line {})", reason, line.getLineId());
+        generateTripsForAllLines();
+    }
+
     public MetroLine addStationToLine(String lineId, String stationId) {
         MetroLine line = metroLineRepo.findById(lineId).orElseThrow();
-        
-        if (line.getStationIds() == null) {
-            line.setStationIds(new ArrayList<>());
+        List<String> stationIds = line.getStationIds() == null ? new ArrayList<>() : new ArrayList<>(line.getStationIds());
+        if (!stationIds.contains(stationId)) {
+            stationIds.add(stationId);
+            updateStationsAndRegenerateTrips(line, stationIds, "Station added: " + stationId);
         }
-        
-        if (!line.getStationIds().contains(stationId)) {
-            line.getStationIds().add(stationId);
-            line.setUpdatedAt(LocalDateTime.now());
-            metroLineRepo.save(line);
-        }
-        
         return findLineByIdWithStations(lineId);
     }
 
     public MetroLine removeStationFromLine(String lineId, String stationId) {
         MetroLine line = metroLineRepo.findById(lineId).orElseThrow();
-        
-        if (line.getStationIds() != null) {
-            line.getStationIds().remove(stationId);
-            line.setUpdatedAt(LocalDateTime.now());
-            metroLineRepo.save(line);
+        List<String> stationIds = line.getStationIds() == null ? new ArrayList<>() : new ArrayList<>(line.getStationIds());
+        if (stationIds.contains(stationId)) {
+            stationIds.remove(stationId);
+            updateStationsAndRegenerateTrips(line, stationIds, "Station removed: " + stationId);
         }
-        
         return findLineByIdWithStations(lineId);
     }
 
@@ -289,15 +297,15 @@ public class MetroLineService {
     }
 
     public List<Trip> generateTripsForLine(MetroLine metroLine) {
-        // Default lastDeparture to 06:00 (6 AM)
-        return generateTripsForLine(metroLine, LocalTime.of(6, 0));
+        // Default lastDeparture to 22:00 (10 PM)
+        return generateTripsForLine(metroLine, LocalTime.of(22, 0));
     }
 
     public List<Trip> generateTripsForAllLines() {
         List<Trip> allTrips = new ArrayList<>();
         List<MetroLine> lines = metroLineRepo.findAll();
         for (MetroLine line : lines) {
-            allTrips.addAll(generateTripsForLine(line, LocalTime.of(6, 0)));
+            allTrips.addAll(generateTripsForLine(line, LocalTime.of(22, 0)));
         }
         return allTrips;
     }
@@ -432,7 +440,8 @@ public class MetroLineService {
     }
 
     public List<Trip> getTripsForStationInLine(String lineId, String stationId) {
-        return tripRepo.findByLineId(lineId).stream()
+        String collectionName = "trips_" + lineId;
+        return mongoTemplate.findAll(Trip.class, collectionName).stream()
             .filter(trip -> trip.getSegments().stream()
                 .anyMatch(segment ->
                     segment.getFromStationId().equals(stationId) ||
@@ -467,7 +476,7 @@ public class MetroLineService {
         }
     }
 
-    private int calculateTotalDuration(MetroLine metroLine) {
+    public int calculateTotalDuration(MetroLine metroLine) {
         int numStations = metroLine.getStationIds() != null ? metroLine.getStationIds().size() : 0;
         int freq = parseFrequency(metroLine.getFrequencyMinutes());
         return numStations > 1 ? (numStations - 1) * freq : 0;
@@ -591,5 +600,17 @@ public class MetroLineService {
         return lines.stream()
             .map(line -> getFullDetailsForLine(line.getLineId()))
             .toList();
+    }
+
+    public MetroLine insertStationAtPosition(String lineId, String stationId, int position) {
+        MetroLine line = metroLineRepo.findById(lineId).orElseThrow();
+        List<String> stationIds = line.getStationIds() == null ? new ArrayList<>() : new ArrayList<>(line.getStationIds());
+        if (!stationIds.contains(stationId)) {
+            if (position < 0) position = 0;
+            if (position > stationIds.size()) position = stationIds.size();
+            stationIds.add(position, stationId);
+            updateStationsAndRegenerateTrips(line, stationIds, "Station inserted at position " + position + ": " + stationId);
+        }
+        return findLineByIdWithStations(lineId);
     }
 }

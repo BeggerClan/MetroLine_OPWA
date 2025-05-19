@@ -113,3 +113,11 @@ export const getAllStations = () =>
   axios.get(`${API_BASE_URL}/api/stations/get-all-stations`, {
     headers: getAuthHeader(),
   });
+
+// Insert a station at a specific position in a metro line
+export const insertStationAtPosition = (lineId, stationId, position) =>
+  axios.post(
+    `${API_BASE_URL}/api/metro-lines/${lineId}/stations/${stationId}/insert?position=${position}`,
+    null,
+    { headers: getAuthHeader() }
+  );

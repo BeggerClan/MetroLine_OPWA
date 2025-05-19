@@ -1,41 +1,50 @@
 import React, { useEffect, useState } from "react";
-import { getAllTrips, getAllStations, getAllMetroLines } from "../../../services/metroLineApi";
+import { getTripsForStationInLine, getAllStations, getMetroLineById } from "../../../services/metroLineApi";
 import { Box, CircularProgress, Button } from '@mui/material';
+import ArrowBackIcon from '@mui/icons-material/ArrowBack';
 import "./AllTripsGridPage.css";
 
 const formatTime = (time) => {
   if (!time) return '-';
-  if (typeof time === "string" && time.length >= 5) return time.slice(0, 5);
   if (time instanceof Date) return time.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+  if (/^\d{2}:\d{2}:\d{2}$/.test(time)) {
+    const [h, m] = time.split(":");
+    return `${h}:${m}`;
+  }
+  const d = new Date(time);
+  if (!isNaN(d)) return d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
   return '-';
 };
 
 const PAGE_SIZE = 10;
 
-const AllTripsGridPage = ({ stationUpdateCount }) => {
+const StationTripsGridPage = ({ lineId, station, onBack }) => {
   const [segments, setSegments] = useState([]);
   const [stationMap, setStationMap] = useState({});
+  const [lineName, setLineName] = useState('');
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [visibleCount, setVisibleCount] = useState(PAGE_SIZE);
 
   useEffect(() => {
+    if (!lineId || !station) return;
     const fetchData = async () => {
       setLoading(true);
-      setError(null);
       try {
-        const [tripsRes, stationsRes] = await Promise.all([
-          getAllTrips(),
+        const [tripsRes, stationsRes, lineRes] = await Promise.all([
+          getTripsForStationInLine(lineId, station.stationId),
           getAllStations(),
+          getMetroLineById(lineId),
         ]);
         const stationMap = {};
         (stationsRes.data || []).forEach((s) => {
           stationMap[s.stationId] = s.stationName;
         });
         setStationMap(stationMap);
+        setLineName(lineRes.data?.lineName || lineId);
         // Flatten all segments from all trips
         const allSegments = [];
-        (tripsRes.data.trips || tripsRes.data || []).forEach(trip => {
+        (tripsRes.data || []).forEach(trip => {
           (trip.segments || []).forEach(segment => {
             allSegments.push({
               tripId: trip.tripId,
@@ -56,19 +65,28 @@ const AllTripsGridPage = ({ stationUpdateCount }) => {
       }
     };
     fetchData();
-    setVisibleCount(PAGE_SIZE);
-  }, [stationUpdateCount]);
+  }, [lineId, station]);
 
   const handleLoadMore = () => {
     setVisibleCount((prev) => Math.min(prev + PAGE_SIZE, segments.length));
   };
 
-  if (loading) return <Box sx={{ display: 'flex', justifyContent: 'center', mt: 4 }}><CircularProgress /> </Box>;
+  if (!lineId || !station) return null;
+  if (loading) return <Box sx={{ display: 'flex', justifyContent: 'center', mt: 4 }}><CircularProgress /></Box>;
   if (error) return <Box sx={{ color: 'red', mt: 2 }}>{error}</Box>;
 
   return (
     <Box sx={{ background: '#fff', borderRadius: 3, p: 4, boxShadow: '0 2px 12px #e1e1e1', width: '100%', height: 'auto', display: 'flex', flexDirection: 'column', alignItems: 'center', flex: 1, minWidth: 0 }}>
-      <h2 className="alltrips-title">All Metro Segments (Every 2-Station Travel)</h2>
+      <h2 className="alltrips-title">Trips for {station.stationName} ({station.stationId}) in {lineName}</h2>
+      <Button
+        variant="contained"
+        color="secondary"
+        startIcon={<ArrowBackIcon />}
+        onClick={onBack}
+        sx={{ borderRadius: 2, fontWeight: 600, letterSpacing: 0.5, mb: 2 }}
+      >
+        Back to Stations
+      </Button>
       <div className="alltrips-table-wrapper" style={{ width: '100%', margin: '0 auto', flex: 1, minWidth: 0 }}>
         <table className="alltrips-table">
           <thead>
@@ -106,7 +124,7 @@ const AllTripsGridPage = ({ stationUpdateCount }) => {
               </tr>
             )) : (
               <tr>
-                <td className="alltrips-cell center" colSpan={7}>No trips found.</td>
+                <td className="alltrips-cell center" colSpan={7}>No trips found for this station.</td>
               </tr>
             )}
           </tbody>
@@ -126,4 +144,4 @@ const AllTripsGridPage = ({ stationUpdateCount }) => {
   );
 };
 
-export default AllTripsGridPage; 
+export default StationTripsGridPage; 

@@ -19,21 +19,26 @@ export const getStation = (stationId) =>
   });
 
 export const addStation = (station) =>
-  axios.post(`${API_BASE}/stations/create`, station, {
-    headers: getAuthHeader(),
-  });
+  axios.post(`${API_BASE}/stations/create`, station, { headers: getAuthHeader() });
 
 export const updateStation = (stationId, station) =>
-  axios.put(`${API_BASE}/stations/${stationId}`, station, {
-    headers: getAuthHeader(),
-  });
+  axios.put(`${API_BASE}/stations/update/${stationId}`, station, { headers: getAuthHeader() });
 
 export const deleteStation = (stationId) =>
-  axios.delete(`${API_BASE}/stations/${stationId}`, {
-    headers: getAuthHeader(),
-  });
+  axios.delete(`${API_BASE}/stations/delete/${stationId}`, { headers: getAuthHeader() });
 
 export const addStationList = (stations) =>
   axios.post(`${API_BASE}/addStationList`, stations, {
+    headers: getAuthHeader(),
+  });
+
+export const searchStationsByName = (name) =>
+  axios.get(`${API_BASE}/stations/search`, {
+    params: { name },
+    headers: getAuthHeader(),
+  });
+
+export const getLinesForStation = (stationId) =>
+  axios.get(`${API_BASE}/stations/${stationId}/lines`, {
     headers: getAuthHeader(),
   });

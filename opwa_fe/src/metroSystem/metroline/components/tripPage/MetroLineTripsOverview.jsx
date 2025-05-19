@@ -1,74 +1,74 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useCallback } from "react";
 import { getAllTrips, getAllMetroLines, getAllStations } from "../../../services/metroLineApi";
+import { Button, CircularProgress, Box } from "@mui/material";
 
 // Helper to format 'HH:mm:ss' as 'HH:mm', fallback to '-'
 const formatTime = (time) => {
   if (!time) return '-';
-  // If already a Date, format as time
+  if (typeof time === "string" && time.length >= 5) return time.slice(0, 5);
   if (time instanceof Date) return time.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-  // If string in HH:mm:ss
-  if (/^\d{2}:\d{2}:\d{2}$/.test(time)) {
-    const [h, m] = time.split(":");
-    return `${h}:${m}`;
-  }
-  // If ISO string
-  const d = new Date(time);
-  if (!isNaN(d)) return d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
   return '-';
 };
 
-const MetroLineTripsOverview = () => {
-  const [tripsByLine, setTripsByLine] = useState({});
-  const [lines, setLines] = useState([]);
-  const [stations, setStations] = useState([]);
-  const [stationMap, setStationMap] = useState({});
+const MetroLineTripsOverview = ({ stationUpdateCount }) => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [tripsByLine, setTripsByLine] = useState({});
+  const [lines, setLines] = useState([]);
+  const [stationMap, setStationMap] = useState({});
+  const [tripType, setTripType] = useState("both"); // "both" | "forward" | "return"
 
-  useEffect(() => {
-    const fetchData = async () => {
-      setLoading(true);
-      try {
-        const [tripsRes, linesRes, stationsRes] = await Promise.all([
-          getAllTrips(),
-          getAllMetroLines(),
-          getAllStations(),
-        ]);
-        const trips = tripsRes.data;
-        const lines = linesRes.data;
-        const stations = stationsRes.data;
-        setLines(lines);
-        setStations(stations);
-        // Map stationId to stationName
-        const map = {};
-        stations.forEach((s) => {
-          map[s.stationId] = s.stationName;
-        });
-        setStationMap(map);
-        // Group trips by lineId
-        const grouped = {};
-        trips.forEach((trip) => {
-          if (!grouped[trip.lineId]) grouped[trip.lineId] = [];
-          grouped[trip.lineId].push(trip);
-        });
-        // Sort trips for each line by departure time
-        Object.keys(grouped).forEach((lineId) => {
-          grouped[lineId].sort((a, b) =>
-            a.departureTime.localeCompare(b.departureTime)
-          );
-        });
-        setTripsByLine(grouped);
-      } catch (err) {
-        setError("Failed to load trips, lines, or stations");
-      } finally {
-        setLoading(false);
-      }
-    };
-    fetchData();
+  const fetchData = useCallback(async () => {
+    setLoading(true);
+    setError(null);
+    try {
+      const [tripsRes, linesRes, stationsRes] = await Promise.all([
+        getAllTrips(),
+        getAllMetroLines(),
+        getAllStations(),
+      ]);
+      const trips = tripsRes.data || [];
+      const lines = linesRes.data || [];
+      const stations = stationsRes.data || [];
+      setLines(lines);
+
+      // Map stationId to stationName
+      const map = {};
+      stations.forEach((s) => {
+        map[s.stationId] = s.stationName;
+      });
+      setStationMap(map);
+
+      // Group trips by lineId
+      const grouped = {};
+      trips.forEach((trip) => {
+        if (!grouped[trip.lineId]) grouped[trip.lineId] = [];
+        grouped[trip.lineId].push(trip);
+      });
+      // Sort trips for each line by departure time
+      Object.keys(grouped).forEach((lineId) => {
+        grouped[lineId].sort((a, b) =>
+          a.departureTime.localeCompare(b.departureTime)
+        );
+      });
+      setTripsByLine(grouped);
+    } catch (err) {
+      setError("Failed to load trips, lines, or stations");
+    } finally {
+      setLoading(false);
+    }
   }, []);
 
-  if (loading) return <div>Loading trips overview...</div>;
-  if (error) return <div style={{ color: "red" }}>{error}</div>;
+  useEffect(() => {
+    fetchData();
+  }, [fetchData, stationUpdateCount]);
+
+  if (loading) return (
+    <Box sx={{ display: 'flex', justifyContent: 'center', mt: 4 }}>
+      <CircularProgress />
+    </Box>
+  );
+  if (error) return <Box sx={{ color: 'red', mt: 2 }}>{error}</Box>;
 
   // Helper to render a trip's route as station names and IDs
   const renderRoute = (segments) => {
@@ -92,56 +92,75 @@ const MetroLineTripsOverview = () => {
     );
   };
 
-  // Helper to render a table for a set of trips
-  const renderTripTable = (trips, label) => (
-    <div style={{ width: "100%", marginBottom: 24 }}>
-      <div style={{ fontWeight: 600, marginBottom: 8 }}>{label}</div>
-      <div style={{ overflowX: "auto" }}>
-        <table style={{ width: "100%", borderCollapse: "collapse", background: "#fafcff", border: "2px solid #2d98da" }}>
-          <thead>
-            <tr style={{ background: "#f1f2f6" }}>
-              <th style={{ padding: 8, fontWeight: 500, border: "1.5px solid #2d98da" }}>Trip ID</th>
-              <th style={{ padding: 8, fontWeight: 500, border: "1.5px solid #2d98da" }}>Departure</th>
-              <th style={{ padding: 8, fontWeight: 500, border: "1.5px solid #2d98da" }}>Arrival</th>
-              <th style={{ padding: 8, fontWeight: 500, border: "1.5px solid #2d98da" }}>Route</th>
-            </tr>
-          </thead>
-          <tbody>
-            {trips.map((trip) => (
-              <tr key={trip.tripId} style={{ borderBottom: "2px solid #2d98da" }}>
-                <td style={{ padding: 8, border: "1.5px solid #2d98da" }}>{trip.tripId}</td>
-                <td style={{ padding: 8, border: "1.5px solid #2d98da" }}>{formatTime(trip.departureTime)}</td>
-                <td style={{ padding: 8, border: "1.5px solid #2d98da" }}>{formatTime(trip.arrivalTime)}</td>
-                <td style={{ padding: 8, border: "1.5px solid #2d98da" }}>{renderRoute(trip.segments)}</td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
-    </div>
-  );
-
   return (
     <div style={{ background: "#fff", borderRadius: 12, padding: 32, boxShadow: "0 2px 12px #e1e1e1" }}>
-      <h2 style={{ marginBottom: 32, color: "#2d98da" }}>Metro Line Trips Overview</h2>
+      <div style={{ display: 'flex', alignItems: 'center', marginBottom: 32, gap: 16 }}>
+        <h2 style={{ margin: 0, color: "#2d98da" }}>Metro Line Trips Overview</h2>
+        <Button variant="outlined" color="primary" onClick={fetchData} disabled={loading} sx={{ fontWeight: 600, borderRadius: 2 }}>
+          {loading ? "Refreshing..." : "Refresh"}
+        </Button>
+      </div>
       {lines.map((line) => {
         const trips = tripsByLine[line.lineId] || [];
         if (trips.length === 0) return null;
-        // Separate forward and return trips
-        const forwardTrips = trips.filter(trip => !trip.returnTrip);
-        const returnTrips = trips.filter(trip => trip.returnTrip);
-        const first2Forward = forwardTrips.slice(0, 2);
+        // Split trips by type
+        const forwardTrips = trips.filter(t => !t.returnTrip);
+        const returnTrips = trips.filter(t => t.returnTrip);
+        // Get last 2 of each
         const last2Forward = forwardTrips.slice(-2);
-        const first2Return = returnTrips.slice(0, 2);
         const last2Return = returnTrips.slice(-2);
+        let filteredTrips = [];
+        if (tripType === "forward") filteredTrips = last2Forward;
+        else if (tripType === "return") filteredTrips = last2Return;
+        else filteredTrips = [...last2Forward, ...last2Return];
         return (
-          <div key={line.lineId} style={{ marginBottom: 40 }}>
-            <h3 style={{ color: "#222", marginBottom: 12 }}>{line.lineName} <span style={{ color: "#888", fontWeight: 400 }}>({line.lineId})</span></h3>
-            <div style={{ display: "flex", flexDirection: "column", gap: 24, minWidth: 0 }}>
-              {renderTripTable(first2Forward, "First 2 Forward Trips")}
-              {renderTripTable(last2Forward, "Last 2 Forward Trips")}
-              {renderTripTable(first2Return, "First 2 Return Trips")}
-              {renderTripTable(last2Return, "Last 2 Return Trips")}
+          <div key={line.lineId + '-' + stationUpdateCount} style={{ marginBottom: 40 }}>
+            <h3 style={{ color: "#222", marginBottom: 12 }}>
+              {line.lineName} <span style={{ color: "#888", fontWeight: 400 }}>({line.lineId})</span>
+            </h3>
+            <div style={{ marginBottom: 12 }}>
+              <Button
+                variant={tripType === "both" ? "contained" : "outlined"}
+                onClick={() => setTripType("both")}
+                sx={{ mr: 1 }}
+              >
+                Both
+              </Button>
+              <Button
+                variant={tripType === "forward" ? "contained" : "outlined"}
+                onClick={() => setTripType("forward")}
+                sx={{ mr: 1 }}
+              >
+                Forward
+              </Button>
+              <Button
+                variant={tripType === "return" ? "contained" : "outlined"}
+                onClick={() => setTripType("return")}
+              >
+                Return
+              </Button>
+            </div>
+            <div style={{ overflowX: "auto" }}>
+              <table style={{ width: "100%", borderCollapse: "collapse", background: "#fafcff", border: "2px solid #2d98da" }}>
+                <thead>
+                  <tr style={{ background: "#f1f2f6" }}>
+                    <th style={{ padding: 8, fontWeight: 500, border: "1.5px solid #2d98da" }}>Trip ID</th>
+                    <th style={{ padding: 8, fontWeight: 500, border: "1.5px solid #2d98da" }}>Departure</th>
+                    <th style={{ padding: 8, fontWeight: 500, border: "1.5px solid #2d98da" }}>Arrival</th>
+                    <th style={{ padding: 8, fontWeight: 500, border: "1.5px solid #2d98da" }}>Route</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {filteredTrips.map((trip) => (
+                    <tr key={trip.tripId} style={{ borderBottom: "2px solid #2d98da" }}>
+                      <td style={{ padding: 8, border: "1.5px solid #2d98da" }}>{trip.tripId}</td>
+                      <td style={{ padding: 8, border: "1.5px solid #2d98da" }}>{formatTime(trip.departureTime)}</td>
+                      <td style={{ padding: 8, border: "1.5px solid #2d98da" }}>{formatTime(trip.arrivalTime)}</td>
+                      <td style={{ padding: 8, border: "1.5px solid #2d98da" }}>{renderRoute(trip.segments)}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
             </div>
           </div>
         );

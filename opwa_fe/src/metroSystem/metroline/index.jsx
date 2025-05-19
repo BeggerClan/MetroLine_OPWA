@@ -12,6 +12,8 @@ const Index = () => {
   const [showAllTrips, setShowAllTrips] = useState(false);
   const [mapModalOpen, setMapModalOpen] = useState(false);
   const [visibleLineIds, setVisibleLineIds] = useState(null);
+  const [stationUpdateCount, setStationUpdateCount] = useState(0);
+  const [overviewKey, setOverviewKey] = useState(0);
 
   const handleShowStations = (lineId) => {
     setSelectedLineId(lineId);
@@ -27,6 +29,13 @@ const Index = () => {
     setVisibleLineIds(ids);
   };
 
+  const handleShowOverview = () => {
+    setShowOverview(true);
+    setShowAllTrips(false);
+    setSelectedLineId(null);
+    setOverviewKey(k => k + 1);
+  };
+
   return (
     <div
       style={{
@@ -34,12 +43,22 @@ const Index = () => {
         display: "flex",
         alignItems: "center",
         justifyContent: "center",
-        background: "#f5f6fa"
+        background: "linear-gradient(120deg, #f5f6fa 60%, #eaf0fb 100%)"
       }}
     >
-      <div style={{ width: "98vw", maxWidth: 1600, display: "flex", gap: 32 }}>
+      <div style={{
+        width: "98vw",
+        maxWidth: 1500,
+        display: "flex",
+        gap: 32,
+        background: "#fff",
+        borderRadius: 18,
+        boxShadow: "0 4px 32px #e1e1e1",
+        padding: 32,
+        margin: 24
+      }}>
         {/* Main content */}
-        <div style={{ flex: 2, minWidth: 0 }}>
+        <div style={{ flex: 2, minWidth: 0, paddingRight: 16 }}>
           <div style={{ display: "flex", gap: 16, marginBottom: 16 }}>
             <button
               onClick={() => { setShowOverview(false); setShowAllTrips(false); setSelectedLineId(null); }}
@@ -55,7 +74,7 @@ const Index = () => {
               Metro Lines
             </button>
             <button
-              onClick={() => { setShowOverview(true); setShowAllTrips(false); setSelectedLineId(null); }}
+              onClick={handleShowOverview}
               style={{
                 padding: "8px 20px",
                 background: showOverview ? "#2d98da" : "#f5f6fa",
@@ -85,16 +104,16 @@ const Index = () => {
             !selectedLineId ? (
               <MetroLineGrid onShowStations={handleShowStations} />
             ) : (
-              <MetroLineStations lineId={selectedLineId} onBack={handleBack} />
+              <MetroLineStations lineId={selectedLineId} onBack={handleBack} onStationChanged={() => setStationUpdateCount(c => c + 1)} />
             )
           ) : showOverview ? (
-            <MetroLineTripsOverview />
+            <MetroLineTripsOverview key={overviewKey + '-' + stationUpdateCount} stationUpdateCount={stationUpdateCount} />
           ) : (
-            <AllTripsGridPage onVisibleLinesChange={handleVisibleLinesChange} />
+            <AllTripsGridPage stationUpdateCount={stationUpdateCount} />
           )}
         </div>
         {/* Mini Map on the right */}
-        <div style={{ flex: 1, minWidth: 350, maxWidth: 500, position: "relative" }}>
+        <div style={{ flex: 1, minWidth: 350, maxWidth: 500, position: "relative", background: "#f8fafd", borderRadius: 14, boxShadow: "0 2px 12px #e1e1e1", padding: 16 }}>
           <div className="mini-map-container">
             <div style={{ display: "flex", justifyContent: "flex-end", marginBottom: 4 }}>
               <button

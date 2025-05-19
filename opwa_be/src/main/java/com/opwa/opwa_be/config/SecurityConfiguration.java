@@ -41,9 +41,14 @@ public class SecurityConfiguration {
                                 "/api/metro-lines/*/trips",
                                 "/api/metro-lines/*/stations/*/trips",
                                 "/api/suspensions/**",
+                                "/api/metro-lines/get-all-metro-lines",
                                 "/api/metro-lines/*/full-details",
                                 "/api/metro-lines/full-details",
-                                "/api/stations/**"
+                                "/api/stations/get-all-stations",
+                                "/api/stations/search",
+                                "/api/stations/marker/**",
+                                "/api/stations/{stationId}/lines",
+                                "/api/stations/{id}"
                         ).permitAll()
                         .requestMatchers(
                                 "/api/v1/user/getAll",
@@ -64,10 +69,15 @@ public class SecurityConfiguration {
                                 "/api/metro-lines/{lineId}/stations/{stationId}",
                                 "/api/metro-lines/{lineId}/stations/update/**",
                                 "/api/metro-lines/{lineId}/stations/delete/**"
-                        ).permitAll()//.hasAnyAuthority("ADMIN", "OPERATOR")
+                        ).hasAnyAuthority("ADMIN", "OPERATOR")
                         // Suspension CRUD (ADMIN, OPERATOR)
                         .requestMatchers(
                                 "/api/suspensions/**"
+                        ).hasAnyAuthority("ADMIN", "OPERATOR")
+                        .requestMatchers(
+                                "/api/stations/create",
+                                "/api/stations/update/**",
+                                "/api/stations/delete/**"
                         ).hasAnyAuthority("ADMIN", "OPERATOR")
                         .anyRequest().authenticated()
                 )

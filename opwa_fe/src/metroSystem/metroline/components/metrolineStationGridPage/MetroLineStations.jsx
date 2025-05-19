@@ -12,6 +12,7 @@ import PauseCircleIcon from "@mui/icons-material/PauseCircle";
 import CheckCircleIcon from "@mui/icons-material/CheckCircle";
 import ArrowBackIcon from '@mui/icons-material/ArrowBack';
 import AddIcon from '@mui/icons-material/Add';
+import StationTripsGridPage from "../tripPage/StationTripsGridPage";
 
 const MetroLineStations = ({ lineId, onBack, onStationChanged, onStationSelect }) => {
   if (!lineId) return null;
@@ -22,6 +23,7 @@ const MetroLineStations = ({ lineId, onBack, onStationChanged, onStationSelect }
   const [selectedStation, setSelectedStation] = useState(null);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [stationToDelete, setStationToDelete] = useState(null);
+  const [showTripsForStation, setShowTripsForStation] = useState(null);
 
   useEffect(() => {
     if (!lineId) return;
@@ -94,6 +96,16 @@ const MetroLineStations = ({ lineId, onBack, onStationChanged, onStationSelect }
     }
   };
 
+  if (showTripsForStation) {
+    return (
+      <StationTripsGridPage
+        lineId={lineId}
+        station={showTripsForStation}
+        onBack={() => setShowTripsForStation(null)}
+      />
+    );
+  }
+
   return (
     <div style={{ padding: 32 }}>
       <Typography variant="h5" gutterBottom>
@@ -141,7 +153,7 @@ const MetroLineStations = ({ lineId, onBack, onStationChanged, onStationSelect }
                     <TableCell sx={{ border: 1, borderColor: 'divider' }}>{station.stationId}</TableCell>
                     <TableCell
                       sx={{ border: 1, borderColor: 'divider', cursor: 'pointer', color: '#1976d2', fontWeight: 500 }}
-                      onClick={() => onStationSelect && onStationSelect(station)}
+                      onClick={() => setShowTripsForStation(station)}
                     >
                       {station.stationName}
                     </TableCell>

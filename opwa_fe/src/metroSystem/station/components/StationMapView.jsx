@@ -68,6 +68,9 @@ const StationMapView = ({ selectedStationIds = [], onResetSelection, showResetBu
     ? [firstStation.latitude, firstStation.longitude]
     : [10.7769, 106.7009];
 
+  // Adjust zoom: zoom in if only one station is selected, else show city
+  const zoom = selectedStationIds.length === 1 ? 13 : 11;
+
   return (
     <div style={{ position: "relative" }}>
       {error && (
@@ -98,9 +101,9 @@ const StationMapView = ({ selectedStationIds = [], onResetSelection, showResetBu
       )}
       <MapContainer
         center={center}
-        zoom={13}
-        minZoom={12}
-        maxZoom={17}
+        zoom={zoom}
+        minZoom={10}
+        maxZoom={16}
         style={{ height: "70vh", width: "100%" }}
         maxBounds={maxBounds}
         maxBoundsViscosity={1.0}

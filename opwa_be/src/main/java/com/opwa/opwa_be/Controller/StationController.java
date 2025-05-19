@@ -9,10 +9,12 @@ import com.opwa.opwa_be.Repository.StationRepo;
 import com.opwa.opwa_be.model.MetroLine;
 import com.opwa.opwa_be.model.Station;
 import com.opwa.opwa_be.Service.StationService;
+import org.apache.commons.text.similarity.LevenshteinDistance;
 
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
+import java.util.stream.Collectors;
 
 @RestController
 @RequestMapping("/api/stations")
@@ -23,6 +25,9 @@ public class StationController {
 
     @Autowired
     private StationService stationService;
+
+    @Autowired
+    private MetroLineRepo metroLineRepo;
 
     @GetMapping("/get-all-stations")
     public ResponseEntity<List<Station>> getAllStations() {
@@ -41,7 +46,15 @@ public class StationController {
 
     @GetMapping("/search")
     public List<Station> searchStationsByName(@RequestParam String name) {
-        return stationRepo.findByStationNameContainingIgnoreCase(name);
+        List<Station> allStations = stationRepo.findAll();
+        LevenshteinDistance ld = new LevenshteinDistance();
+        String query = name.toLowerCase();
+        return allStations.stream()
+            .filter(station -> {
+                String stationName = station.getStationName().toLowerCase();
+                return stationName.contains(query) || ld.apply(stationName, query) <= 2;
+            })
+            .collect(Collectors.toList());
     }
 
     @GetMapping("/marker/{marker}")
@@ -50,18 +63,25 @@ public class StationController {
     }
 
     @PostMapping("/create")
-    public Station createStation(@RequestBody Station station) {
-        return stationService.createStation(station);
+    public ResponseEntity<Station> createStation(@RequestBody Station station) {
+        Station created = stationService.createStation(station);
+        return ResponseEntity.ok(created);
     }
 
-    @PutMapping("/{id}")
-    public Station updateStation(@PathVariable String id, @RequestBody Station station) {
-        return stationService.updateStation(id, station);
+    @PutMapping("/update/{id}")
+    public ResponseEntity<Station> updateStation(@PathVariable String id, @RequestBody Station station) {
+        Station updated = stationService.updateStation(id, station);
+        return ResponseEntity.ok(updated);
     }
 
-    @DeleteMapping("/{id}")
+    @DeleteMapping("/delete/{id}")
     public ResponseEntity<?> deleteStation(@PathVariable String id) {
         stationService.deleteStation(id);
         return ResponseEntity.ok().build();
+    }
+
+    @GetMapping("/{stationId}/lines")
+    public List<MetroLine> getLinesForStation(@PathVariable String stationId) {
+        return metroLineRepo.findByStationIdsContaining(stationId);
     }
 }
