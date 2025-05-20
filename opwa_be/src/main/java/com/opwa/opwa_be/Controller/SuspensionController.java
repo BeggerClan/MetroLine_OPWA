@@ -8,6 +8,9 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import com.opwa.opwa_be.config.JwtService;
+import jakarta.servlet.http.HttpServletRequest;
+
 import java.time.LocalDateTime;
 import java.util.List;
 
@@ -20,6 +23,20 @@ public class SuspensionController {
 
     @Autowired
     private MetroLineService metroLineService;
+
+    @Autowired
+    private JwtService jwtService;
+
+    // Utility method for role check (take token the same way as UserController)
+    private boolean hasAdminOrOperatorRole(HttpServletRequest request) {
+        String authHeader = request.getHeader("Authorization");
+        if (authHeader == null || !authHeader.startsWith("Bearer ")) {
+            return false;
+        }
+        String token = authHeader.substring(7);
+        List<String> roles = jwtService.extractRoles(token);
+        return roles.contains("ADMIN") || roles.contains("OPERATOR");
+    }
 
     @GetMapping
     public ResponseEntity<List<Suspension>> getAllSuspensions(
@@ -54,7 +71,12 @@ public class SuspensionController {
     }
 
     @PostMapping
-    public ResponseEntity<Suspension> createSuspension(@RequestBody Suspension suspension) {
+    public ResponseEntity<Suspension> createSuspension(
+            @RequestBody Suspension suspension,
+            HttpServletRequest request) {
+        if (!hasAdminOrOperatorRole(request)) {
+            return ResponseEntity.status(403).build();
+        }
         Suspension created = suspensionService.createSuspension(suspension);
         return ResponseEntity.ok(created);
     }
@@ -62,7 +84,11 @@ public class SuspensionController {
     @PostMapping("/line/{lineId}/suspend")
     public ResponseEntity<Suspension> suspendLine(
             @PathVariable String lineId,
-            @RequestBody SuspensionRequest request) {
+            @RequestBody SuspensionRequest request,
+            HttpServletRequest httpRequest) {
+        if (!hasAdminOrOperatorRole(httpRequest)) {
+            return ResponseEntity.status(403).build();
+        }
         Suspension suspension = new Suspension();
         suspension.setMetroLineId(lineId);
         suspension.setLineName(metroLineService.getLineName(lineId));
@@ -76,7 +102,12 @@ public class SuspensionController {
     }
 
     @PatchMapping("/{id}/resolve")
-    public ResponseEntity<Void> resolveSuspension(@PathVariable String id) {
+    public ResponseEntity<Void> resolveSuspension(
+            @PathVariable String id,
+            HttpServletRequest request) {
+        if (!hasAdminOrOperatorRole(request)) {
+            return ResponseEntity.status(403).build();
+        }
         suspensionService.resolveSuspension(id);
         return ResponseEntity.noContent().build();
     }
@@ -84,19 +115,33 @@ public class SuspensionController {
     @PatchMapping("/{id}/extend")
     public ResponseEntity<Suspension> extendSuspension(
             @PathVariable String id,
-            @RequestParam int additionalHours) {
+            @RequestParam int additionalHours,
+            HttpServletRequest request) {
+        if (!hasAdminOrOperatorRole(request)) {
+            return ResponseEntity.status(403).build();
+        }
         return ResponseEntity.ok(
                 suspensionService.extendSuspension(id, additionalHours));
     }
 
     @DeleteMapping("/{id}")
-    public ResponseEntity<Void> deleteSuspension(@PathVariable String id) {
+    public ResponseEntity<Void> deleteSuspension(
+            @PathVariable String id,
+            HttpServletRequest request) {
+        if (!hasAdminOrOperatorRole(request)) {
+            return ResponseEntity.status(403).build();
+        }
         suspensionService.deleteSuspension(id);
         return ResponseEntity.noContent().build();
     }
 
     @DeleteMapping("/line/{lineId}")
-    public ResponseEntity<Void> deleteAllSuspensionsByLine(@PathVariable String lineId) {
+    public ResponseEntity<Void> deleteAllSuspensionsByLine(
+            @PathVariable String lineId,
+            HttpServletRequest request) {
+        if (!hasAdminOrOperatorRole(request)) {
+            return ResponseEntity.status(403).build();
+        }
         suspensionService.deleteAllSuspensionsByLineId(lineId);
         return ResponseEntity.noContent().build();
     }
@@ -145,8 +190,11 @@ public class SuspensionController {
     @PatchMapping("/{suspensionId}/details")
     public ResponseEntity<Suspension> updateSuspensionDetails(
             @PathVariable String suspensionId,
-            @RequestBody UpdateSuspensionRequest request) {
-
+            @RequestBody UpdateSuspensionRequest request,
+            HttpServletRequest httpRequest) {
+        if (!hasAdminOrOperatorRole(httpRequest)) {
+            return ResponseEntity.status(403).build();
+        }
         Suspension updated = suspensionService.updateSuspensionDetails(
                 suspensionId,
                 request.getReason(),
@@ -158,16 +206,36 @@ public class SuspensionController {
     @PatchMapping("/{suspensionId}/add-stations")
     public ResponseEntity<Suspension> addStationsToSuspension(
             @PathVariable String suspensionId,
-            @RequestBody List<String> stationIds) {
-
+            @RequestBody List<String> stationIds,
+            HttpServletRequest request) {
+        if (!hasAdminOrOperatorRole(request)) {
+            return ResponseEntity.status(403).build();
+        }
         return ResponseEntity.ok(
                 suspensionService.addStationsToSuspension(suspensionId, stationIds));
     }
 
     @PutMapping("/update-metro-status/{lineId}")
-    public ResponseEntity<Void> updateMetroLineStatus(@PathVariable String lineId) {
+    public ResponseEntity<Void> updateMetroLineStatus(
+            @PathVariable String lineId,
+            HttpServletRequest request) {
+        if (!hasAdminOrOperatorRole(request)) {
+            return ResponseEntity.status(403).build();
+        }
         suspensionService.updateMetroLineSuspendedStatus(lineId);
         return ResponseEntity.noContent().build();
+    }
+
+    @PatchMapping("/{suspensionId}/remove-station/{stationId}")
+    public ResponseEntity<Suspension> removeStationFromSuspension(
+            @PathVariable String suspensionId,
+            @PathVariable String stationId,
+            HttpServletRequest request) {
+        if (!hasAdminOrOperatorRole(request)) {
+            return ResponseEntity.status(403).build();
+        }
+        Suspension updated = suspensionService.removeStationFromSuspension(suspensionId, stationId);
+        return ResponseEntity.ok(updated);
     }
 
     // Request DTO
@@ -200,13 +268,5 @@ public class SuspensionController {
         public void setDurationHours(Integer durationHours) {
             this.durationHours = durationHours;
         }
-    }
-
-    @PatchMapping("/{suspensionId}/remove-station/{stationId}")
-    public ResponseEntity<Suspension> removeStationFromSuspension(
-            @PathVariable String suspensionId,
-            @PathVariable String stationId) {
-        Suspension updated = suspensionService.removeStationFromSuspension(suspensionId, stationId);
-        return ResponseEntity.ok(updated);
     }
 }

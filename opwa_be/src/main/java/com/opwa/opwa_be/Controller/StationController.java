@@ -1,6 +1,7 @@
 package com.opwa.opwa_be.Controller;
 
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
@@ -8,6 +9,11 @@ import com.opwa.opwa_be.Repository.MetroLineRepo;
 import com.opwa.opwa_be.Repository.StationRepo;
 import com.opwa.opwa_be.model.MetroLine;
 import com.opwa.opwa_be.model.Station;
+import com.opwa.opwa_be.config.JwtService;
+
+
+import jakarta.servlet.http.HttpServletRequest;
+
 import com.opwa.opwa_be.Service.StationService;
 import org.apache.commons.text.similarity.LevenshteinDistance;
 
@@ -28,6 +34,9 @@ public class StationController {
 
     @Autowired
     private MetroLineRepo metroLineRepo;
+
+    @Autowired
+    private JwtService jwtService;
 
     @GetMapping("/get-all-stations")
     public ResponseEntity<List<Station>> getAllStations() {
@@ -63,19 +72,28 @@ public class StationController {
     }
 
     @PostMapping("/create")
-    public ResponseEntity<Station> createStation(@RequestBody Station station) {
+    public ResponseEntity<Station> createStation(HttpServletRequest request, @RequestBody Station station) {
+        if (!hasAdminOrOperatorRole(request)) {
+            return ResponseEntity.status(HttpStatus.FORBIDDEN).body(null);
+        }
         Station created = stationService.createStation(station);
         return ResponseEntity.ok(created);
     }
 
     @PutMapping("/update/{id}")
-    public ResponseEntity<Station> updateStation(@PathVariable String id, @RequestBody Station station) {
+    public ResponseEntity<Station> updateStation(HttpServletRequest request, @PathVariable String id, @RequestBody Station station) {
+        if (!hasAdminOrOperatorRole(request)) {
+            return ResponseEntity.status(HttpStatus.FORBIDDEN).body(null);
+        }
         Station updated = stationService.updateStation(id, station);
         return ResponseEntity.ok(updated);
     }
 
     @DeleteMapping("/delete/{id}")
-    public ResponseEntity<?> deleteStation(@PathVariable String id) {
+    public ResponseEntity<?> deleteStation(HttpServletRequest request, @PathVariable String id) {
+        if (!hasAdminOrOperatorRole(request)) {
+            return ResponseEntity.status(HttpStatus.FORBIDDEN).body(null);
+        }
         stationService.deleteStation(id);
         return ResponseEntity.ok().build();
     }
@@ -83,5 +101,16 @@ public class StationController {
     @GetMapping("/{stationId}/lines")
     public List<MetroLine> getLinesForStation(@PathVariable String stationId) {
         return metroLineRepo.findByStationIdsContaining(stationId);
+    }
+
+    // Utility method for role check (take token the same way as UserController)
+    private boolean hasAdminOrOperatorRole(HttpServletRequest request) {
+        String authHeader = request.getHeader("Authorization");
+        if (authHeader == null || !authHeader.startsWith("Bearer ")) {
+            return false;
+        }
+        String token = authHeader.substring(7);
+        List<String> roles = jwtService.extractRoles(token);
+        return roles.contains("ADMIN") || roles.contains("OPERATOR");
     }
 }
