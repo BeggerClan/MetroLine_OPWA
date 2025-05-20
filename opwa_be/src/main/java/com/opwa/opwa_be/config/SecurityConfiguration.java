@@ -72,8 +72,9 @@ public class SecurityConfiguration {
                         ).hasAnyAuthority("ADMIN", "OPERATOR")
                         // Suspension CRUD (ADMIN, OPERATOR)
                         .requestMatchers(
-                                "/api/suspensions/**"
-                        ).permitAll()//.hasAnyAuthority("ADMIN", "OPERATOR")
+                                "/api/suspensions/**/remove-station/**",
+                                "/api/suspensions/**/add-stations"
+                        ).hasAnyAuthority("ADMIN", "OPERATOR")
                         .requestMatchers(
                                 "/api/stations/create",
                                 "/api/stations/update/**",
