@@ -92,6 +92,11 @@ public class SuspensionService {
         suspension.setStartTime(LocalDateTime.now());
         suspension.setActive(true);
 
+        // Set expected end time to 10 minutes after start time if not provided
+        if (suspension.getExpectedEndTime() == null) {
+            suspension.setExpectedEndTime(suspension.getStartTime().plusMinutes(10));
+        }
+
         // Update metro line status and active flag
         metroLineRepo.findById(suspension.getMetroLineId()).ifPresent(line -> {
             line.setSuspended(true);
@@ -247,9 +252,10 @@ public class SuspensionService {
 
         // Count total unique affected stations across all active suspensions
         int affectedStationCount = activeSuspensions.stream()
-            .flatMap(s -> s.getAffectedStationIds() != null ? s.getAffectedStationIds().stream() : java.util.stream.Stream.empty())
-            .collect(java.util.stream.Collectors.toSet())
-            .size();
+                .flatMap(s -> s.getAffectedStationIds() != null ? s.getAffectedStationIds().stream()
+                        : java.util.stream.Stream.empty())
+                .collect(java.util.stream.Collectors.toSet())
+                .size();
 
         metroLineRepo.findById(metroLineId).ifPresent(line -> {
             if (affectedStationCount == 0) {
