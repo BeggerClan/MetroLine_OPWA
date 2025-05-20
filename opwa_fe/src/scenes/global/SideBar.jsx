@@ -5,7 +5,7 @@ import {
   ProSidebarProvider,
 } from "react-pro-sidebar";
 import { Box, IconButton, Typography, useTheme } from "@mui/material";
-import { Link } from "react-router-dom";
+import { Link, useLocation, useNavigate } from "react-router-dom";
 import { tokens } from "../../theme";
 import HomeOutlinedIcon from "@mui/icons-material/HomeOutlined";
 import PeopleOutlinedIcon from "@mui/icons-material/PeopleOutlined";
@@ -45,6 +45,8 @@ const Item = ({ title, to, icon, selected, setSelected }) => {
 const Sidebar = ({ isCollapsed, onToggleCollapse, selected, setSelected }) => {
   const theme = useTheme();
   const colors = tokens(theme.palette.mode);
+  const location = useLocation();
+  const navigate = useNavigate();
 
   // Hàm logout
   const handleLogout = () => {
@@ -165,6 +167,12 @@ const Sidebar = ({ isCollapsed, onToggleCollapse, selected, setSelected }) => {
                 icon={<DirectionsTransitOutlinedIcon />}
                 selected={selected}
                 setSelected={setSelected}
+                onClick={() => {
+                  if (location.pathname === "/dashboard/metroline") {
+                    // Force a refresh/reset by navigating to the same route with replace and no state
+                    navigate("/dashboard/metroline", { replace: true, state: {} });
+                  }
+                }}
               />
               <Item
                 title="Station"

@@ -181,7 +181,8 @@ const Topbar = ({ isSidebarCollapsed }) => {
                   secondary={`ID: ${station.stationId}`}
                 />
                 <Tooltip title="Show on map and highlight marker">
-                  <Button size="small" onClick={() => handleGoToMapView(station.stationId)}>
+                  <Button size="small" onClick={() => handleGoToMapView(station.stationId)}
+                    sx={{ color: '#2d98da', fontWeight: 600 }}>
                     Map View
                   </Button>
                 </Tooltip>
@@ -193,7 +194,7 @@ const Topbar = ({ isSidebarCollapsed }) => {
                       <Tooltip key={line.lineId} title={`View trips for ${station.stationName} on ${line.lineName}`}> 
                         <Button
                           size="small"
-                          sx={{ ml: 0.5, mb: 0.5 }}
+                          sx={{ ml: 0.5, mb: 0.5, color: '#27ae60', fontWeight: 600 }}
                           onClick={() => handleGoToTrips(line.lineId, station.stationId)}
                         >
                           Trips ({line.lineName})

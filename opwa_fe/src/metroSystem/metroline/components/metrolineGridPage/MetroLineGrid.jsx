@@ -24,9 +24,9 @@ const MetroLineGrid = ({ onShowStations }) => {
   const [selectedLineName, setSelectedLineName] = useState('');
   const [selectedView, setSelectedView] = useState('stations');
 
-  useEffect(() => { 
+  useEffect(() => {
     setMetroLines([]); // Clear grid before fetching new data
-    fetchMetroLines(); 
+    fetchMetroLines();
   }, [refresh]);
   useEffect(() => { fetchAllSuspensions(); }, [metroLines]);
 
@@ -151,6 +151,21 @@ const MetroLineGrid = ({ onShowStations }) => {
     return affectedStationsSet.size < 3;
   };
 
+  // Show snackbar after station suspension triggers a status change
+  useEffect(() => {
+    if (selectedLineId && metroLines.length > 0) {
+      const line = metroLines.find(l => l.lineId === selectedLineId);
+      if (line) {
+        const active = isLineActive(line);
+        showSnackbar(
+          `Line ${line.lineName} is now ${active ? 'Active' : 'Inactive'} (due to ${active ? 'less than 3' : '3 or more'} stations suspended)`,
+          active ? 'success' : 'error'
+        );
+      }
+    }
+    // eslint-disable-next-line
+  }, [refresh]);
+
   const handleStationsChanged = () => {
     setRefresh(r => r + 1);
   };
@@ -171,6 +186,11 @@ const MetroLineGrid = ({ onShowStations }) => {
 
   return (
     <div>
+      <div style={{ marginBottom: 8 }}>
+        <span style={{ color: '#2d98da', fontWeight: 600, fontSize: 20 }}>
+          Metro Line Management
+        </span>
+      </div>
       <Button
         variant="contained"
         color="primary"
@@ -303,7 +323,7 @@ const MetroLineGrid = ({ onShowStations }) => {
               lineId={selectedLineId}
               onBack={handleBackToGrid}
               onStationChanged={handleStationsChanged}
-              onStationSelect={() => {}}
+              onStationSelect={() => { }}
             />
           )}
           {selectedView === 'trips' && (

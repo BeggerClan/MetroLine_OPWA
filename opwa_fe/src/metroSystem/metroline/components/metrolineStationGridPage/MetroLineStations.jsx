@@ -13,6 +13,7 @@ import CheckCircleIcon from "@mui/icons-material/CheckCircle";
 import ArrowBackIcon from '@mui/icons-material/ArrowBack';
 import AddIcon from '@mui/icons-material/Add';
 import StationTripsGridPage from "../tripPage/StationTripsGridPage";
+import NotificationSnackbar from '../NotificationSnackbar';
 
 const MetroLineStations = ({ lineId, onBack, onStationChanged, onStationSelect, autoShowStationId, onAutoShowStationHandled }) => {
   if (!lineId) return null;
@@ -24,6 +25,8 @@ const MetroLineStations = ({ lineId, onBack, onStationChanged, onStationSelect, 
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [stationToDelete, setStationToDelete] = useState(null);
   const [showTripsForStation, setShowTripsForStation] = useState(null);
+  const [snackbar, setSnackbar] = useState({ open: false, message: '', severity: 'success' });
+  const [lastActive, setLastActive] = useState(true);
 
   useEffect(() => {
     if (!lineId) return;
@@ -43,6 +46,32 @@ const MetroLineStations = ({ lineId, onBack, onStationChanged, onStationSelect, 
     }
     // eslint-disable-next-line
   }, [autoShowStationId, stations]);
+
+  // Helper: determine active status based on suspensions
+  const isLineActive = () => {
+    // Get all active suspensions and collect unique affected station IDs
+    const affectedStationsSet = new Set();
+    suspensions.forEach(susp => {
+      if (susp.active && Array.isArray(susp.affectedStationIds)) {
+        susp.affectedStationIds.forEach(id => affectedStationsSet.add(id));
+      }
+    });
+    return affectedStationsSet.size < 3;
+  };
+
+  // Watch for changes in suspensions to show popup if active status changes
+  useEffect(() => {
+    const active = isLineActive();
+    if (active !== lastActive) {
+      setSnackbar({
+        open: true,
+        message: `Line is now ${active ? 'Active' : 'Inactive'} (due to ${active ? 'less than 3' : '3 or more'} stations suspended)`,
+        severity: active ? 'success' : 'error',
+      });
+      setLastActive(active);
+    }
+    // eslint-disable-next-line
+  }, [suspensions]);
 
   const fetchStations = async () => {
     const res = await getStationsForLine(lineId);
@@ -231,6 +260,12 @@ const MetroLineStations = ({ lineId, onBack, onStationChanged, onStationSelect, 
           <Button onClick={handleDeleteConfirm} color="error">Delete</Button>
         </DialogActions>
       </Dialog>
+      <NotificationSnackbar
+        open={snackbar.open}
+        onClose={() => setSnackbar({ ...snackbar, open: false })}
+        severity={snackbar.severity}
+        message={snackbar.message}
+      />
     </div>
   );
 };
