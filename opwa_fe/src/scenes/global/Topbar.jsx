@@ -91,7 +91,7 @@ const Topbar = ({ isSidebarCollapsed }) => {
 
   // Navigation for trips
   const handleGoToTrips = (lineId, stationId) => {
-    navigate(`/dashboard/metroline/${lineId}/station/${stationId}/trips`);
+    navigate('/dashboard/metroline', { state: { lineId, stationId } });
     setSearchAnchor(null);
     setSearch("");
     setSearchResults([]);

@@ -5,8 +5,10 @@ import MetroLineMapView from "./components/mapView/MetroLineMapView";
 import MetroLineTripsOverview from "./components/tripPage/MetroLineTripsOverview";
 import AllTripsGridPage from "./components/tripPage/AllTripsGridPage";
 import "./indexMapModal.css";
+import { useLocation } from "react-router-dom";
 
 const Index = () => {
+  const location = useLocation();
   const [selectedLineId, setSelectedLineId] = useState(null);
   const [showOverview, setShowOverview] = useState(false);
   const [showAllTrips, setShowAllTrips] = useState(false);
@@ -14,6 +16,17 @@ const Index = () => {
   const [visibleLineIds, setVisibleLineIds] = useState(null);
   const [stationUpdateCount, setStationUpdateCount] = useState(0);
   const [overviewKey, setOverviewKey] = useState(0);
+  const [autoShowStationId, setAutoShowStationId] = useState(null);
+
+  // Handle navigation from Topbar (or other places) with state
+  React.useEffect(() => {
+    if (location.state && location.state.lineId && location.state.stationId) {
+      setSelectedLineId(location.state.lineId);
+      setAutoShowStationId(location.state.stationId);
+      // Clear state so it doesn't repeat on re-render
+      window.history.replaceState({}, document.title);
+    }
+  }, [location.state]);
 
   const handleShowStations = (lineId) => {
     setSelectedLineId(lineId);
@@ -104,7 +117,13 @@ const Index = () => {
             !selectedLineId ? (
               <MetroLineGrid onShowStations={handleShowStations} />
             ) : (
-              <MetroLineStations lineId={selectedLineId} onBack={handleBack} onStationChanged={() => setStationUpdateCount(c => c + 1)} />
+              <MetroLineStations
+                lineId={selectedLineId}
+                onBack={handleBack}
+                onStationChanged={() => setStationUpdateCount(c => c + 1)}
+                autoShowStationId={autoShowStationId}
+                onAutoShowStationHandled={() => setAutoShowStationId(null)}
+              />
             )
           ) : showOverview ? (
             <MetroLineTripsOverview key={overviewKey + '-' + stationUpdateCount} stationUpdateCount={stationUpdateCount} />

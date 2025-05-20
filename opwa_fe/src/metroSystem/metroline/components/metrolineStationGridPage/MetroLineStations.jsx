@@ -14,7 +14,7 @@ import ArrowBackIcon from '@mui/icons-material/ArrowBack';
 import AddIcon from '@mui/icons-material/Add';
 import StationTripsGridPage from "../tripPage/StationTripsGridPage";
 
-const MetroLineStations = ({ lineId, onBack, onStationChanged, onStationSelect }) => {
+const MetroLineStations = ({ lineId, onBack, onStationChanged, onStationSelect, autoShowStationId, onAutoShowStationHandled }) => {
   if (!lineId) return null;
   const [stations, setStations] = useState([]);
   const [suspensions, setSuspensions] = useState([]);
@@ -31,6 +31,18 @@ const MetroLineStations = ({ lineId, onBack, onStationChanged, onStationSelect }
     fetchSuspensions();
     // eslint-disable-next-line
   }, [lineId]);
+
+  // Auto-show trips for a station if requested
+  useEffect(() => {
+    if (autoShowStationId && stations.length > 0) {
+      const found = stations.find(s => s.stationId === autoShowStationId);
+      if (found) {
+        setShowTripsForStation(found);
+        if (onAutoShowStationHandled) onAutoShowStationHandled();
+      }
+    }
+    // eslint-disable-next-line
+  }, [autoShowStationId, stations]);
 
   const fetchStations = async () => {
     const res = await getStationsForLine(lineId);
